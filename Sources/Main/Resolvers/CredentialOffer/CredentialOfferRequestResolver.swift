@@ -47,11 +47,6 @@ public actor CredentialOfferRequestResolver {
   private let credentialIssuerMetadataResolver: CredentialIssuerMetadataResolver
   private let authorizationServerMetadataResolver: AuthorizationServerMetadataResolver
   
-  /// Initializes an instance of YourClass.
-  ///
-  /// - Parameters:
-  ///   - credentialIssuerMetadataResolver: An object responsible for resolving credential issuer metadata.
-  ///   - authorizationServerMetadataResolver: An object responsible for resolving authorization server metadata.
   public init(
     fetcher: Fetcher<CredentialOfferRequestObject> = Fetcher(),
     credentialIssuerMetadataResolver: CredentialIssuerMetadataResolver = CredentialIssuerMetadataResolver(),
@@ -62,12 +57,6 @@ public actor CredentialOfferRequestResolver {
     self.authorizationServerMetadataResolver = authorizationServerMetadataResolver
   }
   
-  /// Resolves client metadata asynchronously.
-  ///
-  /// - Parameters:
-  ///   - fetcher: The fetcher object responsible for fetching metadata. Default value is Fetcher<ClientMetaData>().
-  ///   - source: The input source for resolving metadata.
-  /// - Returns: An asynchronous result containing the resolved metadata or an error of type ResolvingError.
   public func resolve(
     source: CredentialOfferRequest?,
     policy: IssuerMetadataPolicy
@@ -90,7 +79,16 @@ public actor CredentialOfferRequestResolver {
           return .failure(ValidationError.error(reason: "Invalid credential metadata"))
         }
         
-        guard let authorizationServer = credentialIssuerMetadata.authorizationServers?.first,
+        let grantAS = credentialOfferRequestObject.grants?.preAuthorizationCode?.authorizationServer
+                      ?? credentialOfferRequestObject.grants?.authorizationCode?.authorizationServer
+        let resolvedAS = grantAS.flatMap { asString -> URL? in
+          guard let asURL = URL(string: asString),
+                let knownServers = credentialIssuerMetadata.authorizationServers,
+                knownServers.contains(asURL) else { return nil }
+          return asURL
+        } ?? credentialIssuerMetadata.authorizationServers?.first
+        print("[OID4VCI] Resolved authorization server: \(resolvedAS?.absoluteString ?? "nil")")
+        guard let authorizationServer = resolvedAS,
               let authorizationServerMetadata = try? await authorizationServerMetadataResolver.resolve(url: authorizationServer).get() else {
           return .failure(ValidationError.error(reason: "Invalid authorization metadata"))
         }
@@ -114,8 +112,17 @@ public actor CredentialOfferRequestResolver {
             return .failure(ValidationError.error(reason: "Invalid credential metadata"))
           }
           
-          guard let authorizationServer = credentialIssuerMetadata.authorizationServers?.first,
-                  let authorizationServerMetadata = try? await authorizationServerMetadataResolver.resolve(url: authorizationServer).get() else {
+          let grantAS = credentialOfferRequestObject.grants?.preAuthorizationCode?.authorizationServer
+                        ?? credentialOfferRequestObject.grants?.authorizationCode?.authorizationServer
+          let resolvedAS = grantAS.flatMap { asString -> URL? in
+            guard let asURL = URL(string: asString),
+                  let knownServers = credentialIssuerMetadata.authorizationServers,
+                  knownServers.contains(asURL) else { return nil }
+            return asURL
+          } ?? credentialIssuerMetadata.authorizationServers?.first
+          print("[OID4VCI] Resolved authorization server: \(resolvedAS?.absoluteString ?? "nil")")
+          guard let authorizationServer = resolvedAS,
+                let authorizationServerMetadata = try? await authorizationServerMetadataResolver.resolve(url: authorizationServer).get() else {
             return .failure(ValidationError.error(reason: "Invalid authorization metadata"))
           }
           
