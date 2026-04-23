@@ -26,7 +26,7 @@ public enum Grants: Sendable {
     
     public init(
       issuerState: String? = nil,
-      authorizationServer: URL?
+      authorizationServer: URL? = nil
     ) throws {
       self.issuerState = issuerState
       self.authorizationServer = authorizationServer
