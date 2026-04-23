@@ -53,7 +53,7 @@ public extension GrantsDTO {
       case authorizationServer = "authorization_server"
     }
     
-    public init(issuerState: String, authorizationServer: String) {
+    public init(issuerState: String? = nil, authorizationServer: String? = nil) {
       self.issuerState = issuerState
       self.authorizationServer = authorizationServer
     }
