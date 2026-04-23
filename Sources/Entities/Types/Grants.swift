@@ -75,7 +75,7 @@ extension GrantsDTO {
         ),
         Grants.PreAuthorizedCode(
           preAuthorizedCode: preAuthorizationCode.preAuthorizedCode,
-          txCode: preAuthorizationCode.txCode
+          txCode: preAuthorizationCode.txCode,
           authorizationServer: preAuthorizationCode.authorizationServer.flatMap { URL(string: $0) }
         )
       )
